@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DramaVault - Stream Premium Dramas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Bebas Neue', 'sans-serif'],
+                        sans: ['DM Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        vault: {
+                            black: '#0A0A0A',
+                            darker: '#0F0F0F',
+                            dark: '#141414',
+                            card: '#1A1A1A',
+                            elevated: '#222222',
+                            border: '#2A2A2A',
+                            muted: '#808080',
+                            light: '#B3B3B3',
+                            accent: '#E50914',
+                            accentHover: '#F40612',
+                            accentDark: '#B20710',
+                            gold: '#FFD700',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #0A0A0A;
+            --fg: #FFFFFF;
+            --muted: #808080;
+            --accent: #E50914;
+            --card: #1A1A1A;
+            --border: #2A2A2A;
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--card);
+        }
+
+        *::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--card);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'DM Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Noise overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Page transitions */
+        .page {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .page.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(229, 9, 20, 0.6); }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .animate-slideInRight {
+            animation: slideInRight 0.5s ease forwards;
+        }
+
+        .animate-scaleIn {
+            animation: scaleIn 0.4s ease forwards;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, var(--card) 25%, #2a2a2a 50%, var(--card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* Card hover effects */
+        .story-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .story-card:hover {
+            transform: scale(1.05) translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+
+        /* Hero gradient */
+        .hero-gradient {
+            background: linear-gradient(
+                to right,
+                rgba(10, 10, 10, 1) 0%,
+                rgba(10, 10, 10, 0.8) 30%,
+                rgba(10, 10, 10, 0.4) 60%,
+                rgba(10, 10, 10, 0) 100%
+            ),
+            linear-gradient(
+                to top,
+                rgba(10, 10, 10, 1) 0%,
+                rgba(10, 10, 10, 0) 50%
+            );
+        }
+
+        /* Button styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #E50914 0%, #B20710 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #F40612 0%, #C90810 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(229, 9, 20, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Season tabs */
+        .season-tab {
+            transition: all 0.3s ease;
+        }
+
+        .season-tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .season-tab:not(.active):hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Episode card */
+        .episode-card {
+            transition: all 0.3s ease;
+        }
+
+        .episode-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        /* Video player container */
+        .video-container {
+            background: linear-gradient(135deg, #0F0F0F 0%, #1A1A1A 100%);
+            box-shadow: 0 0 60px rgba(229, 9, 20, 0.2);
+        }
+
+        /* Search input */
+        .search-input:focus {
+            box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.5);
+        }
+
+        /* Navbar scroll effect */
+        .navbar {
+            transition: background 0.3s ease, backdrop-filter 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+        }
+
+        /* Genre tag */
+        .genre-tag {
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.2) 0%, rgba(178, 7, 16, 0.2) 100%);
+            border: 1px solid rgba(229, 9, 20, 0.3);
+        }
+
+        /* Ad placeholder */
+        .ad-placeholder {
+            background: repeating-linear-gradient(
+                45deg,
+                #1A1A1A,
+                #1A1A1A 10px,
+                #222 10px,
+                #222 20px
+            );
+        }
+
+        /* Modal */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Focus states */
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Horizontal scroll for cards */
+        .scroll-container {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Ambient glow */
+        .ambient-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-vault-black">
+    <!-- Noise overlay -->
+    <div class="noise-overlay"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="#home" class="flex items-center gap-2">
+                <svg class="w-8 h-8 text-vault-accent" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M4 4h4v16H4V4zm6 0h4v16h-4V4zm6 0h4v16h-4V4z"/>
+                </svg>
+                <span class="font-display text-2xl md:text-3xl tracking-wider text-white">DRAMAVAULT</span>
+            </a>
+            
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#home" class="nav-link text-vault-light hover:text-white transition-colors font-medium">Home</a>
+                <a href="#home" class="nav-link text-vault-light hover:text-white transition-colors font-medium" onclick="scrollToSection('trending')">Trending</a>
+                <a href="#home" class="nav-link text-vault-light hover:text-white transition-colors font-medium" onclick="scrollToSection('categories')">Categories</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSearch()" class="p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="Search">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Search bar -->
+        <div id="searchBar" class="hidden absolute top-full left-0 right-0 bg-vault-darker border-t border-vault-border p-4">
+            <div class="max-w-2xl mx-auto">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="searchInput"
+                        placeholder="Search dramas..." 
+                        class="search-input w-full bg-vault-card border border-vault-border rounded-lg px-4 py-3 pl-12 text-white placeholder-vault-muted focus:outline-none transition-all"
+                        oninput="handleSearch(this.value)"
+                    >
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-vault-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <div id="searchResults" class="mt-4 space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div id="mobileMenu" class="hidden md:hidden absolute top-full left-0 right-0 bg-vault-darker border-t border-vault-border p-4">
+            <div class="flex flex-col gap-4">
+                <a href="#home" class="text-vault-light hover:text-white transition-colors font-medium py-2">Home</a>
+                <a href="#home" class="text-vault-light hover:text-white transition-colors font-medium py-2" onclick="scrollToSection('trending'); toggleMobileMenu();">Trending</a>
+                <a href="#home" class="text-vault-light hover:text-white transition-colors font-medium py-2" onclick="scrollToSection('categories'); toggleMobileMenu();">Categories</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Page -->
+    <main id="homePage" class="page active">
+        <!-- Hero Section -->
+        <section id="heroSection" class="relative min-h-screen flex items-center">
+            <div class="absolute inset-0 hero-gradient z-10"></div>
+            <div id="heroBackground" class="absolute inset-0 bg-cover bg-center bg-no-repeat"></div>
+            
+            <!-- Ambient glow -->
+            <div class="ambient-glow bg-vault-accent -right-40 top-1/4"></div>
+            
+            <div class="relative z-20 px-4 md:px-8 pt-24 pb-12 max-w-7xl mx-auto w-full">
+                <div class="max-w-2xl">
+                    <div id="heroContent">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ad Banner -->
+        <div class="ad-placeholder h-24 md:h-28 flex items-center justify-center text-vault-muted text-sm">
+            Advertisement Space
+        </div>
+
+        <!-- Latest Stories -->
+        <section class="py-12 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="font-display text-3xl md:text-4xl tracking-wide mb-6 opacity-0 animate-fadeInUp">LATEST STORIES</h2>
+                <div id="latestStories" class="flex gap-4 overflow-x-auto scroll-container pb-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Trending Stories -->
+        <section id="trending" class="py-12 px-4 md:px-8 bg-gradient-to-b from-transparent via-vault-darker to-transparent">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center gap-3 mb-6">
+                    <svg class="w-6 h-6 text-vault-accent" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2Z"/>
+                    </svg>
+                    <h2 class="font-display text-3xl md:text-4xl tracking-wide opacity-0 animate-fadeInUp">TRENDING NOW</h2>
+                </div>
+                <div id="trendingStories" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories -->
+        <section id="categories" class="py-12 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="font-display text-3xl md:text-4xl tracking-wide mb-6 opacity-0 animate-fadeInUp">BROWSE BY CATEGORY</h2>
+                <div id="categoriesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- All Stories -->
+        <section class="py-12 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="font-display text-3xl md:text-4xl tracking-wide mb-6 opacity-0 animate-fadeInUp">ALL STORIES</h2>
+                <div id="allStories" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Ad Banner -->
+        <div class="ad-placeholder h-24 md:h-28 flex items-center justify-center text-vault-muted text-sm">
+            Advertisement Space
+        </div>
+    </main>
+
+    <!-- Story Details Page -->
+    <main id="storyPage" class="page">
+        <div id="storyContent" class="min-h-screen">
+            <!-- Populated by JS -->
+        </div>
+    </main>
+
+    <!-- Episode Player Page -->
+    <main id="playerPage" class="page">
+        <div id="playerContent" class="min-h-screen">
+            <!-- Populated by JS -->
+        </div>
+    </main>
+
+    <!-- Support Modal -->
+    <div id="supportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeSupportModal()"></div>
+        <div class="relative bg-vault-card rounded-2xl p-6 md:p-8 max-w-md w-full animate-scaleIn border border-vault-border">
+            <button onclick="closeSupportModal()" class="absolute top-4 right-4 text-vault-muted hover:text-white transition-colors" aria-label="Close">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-vault-accent/20 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-vault-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="font-display text-2xl tracking-wide mb-2">CONTINUE TO WATCH</h3>
+                <p class="text-vault-light mb-6">Please visit our support page to continue watching this episode. This helps us keep the service free.</p>
+                <button id="supportActionButton" onclick="handleSupportAction()" class="btn-primary w-full py-3 rounded-lg font-semibold text-white">
+                    Visit Support Page
+                </button>
+                <p class="text-vault-muted text-sm mt-4">The video will play automatically after your visit.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-vault-darker border-t border-vault-border py-12 px-4 md:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h4 class="font-semibold mb-4">Browse</h4>
+                    <ul class="space-y-2 text-vault-light">
+                        <li><a href="#home" class="hover:text-white transition-colors">Home</a></li>
+                        <li><a href="#" onclick="scrollToSection('trending')" class="hover:text-white transition-colors">Trending</a></li>
+                        <li><a href="#" onclick="scrollToSection('categories')" class="hover:text-white transition-colors">Categories</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Genres</h4>
+                    <ul class="space-y-2 text-vault-light">
+                        <li><a href="#" class="hover:text-white transition-colors">Romance</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Drama</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Thriller</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Help</h4>
+                    <ul class="space-y-2 text-vault-light">
+                        <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Support</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-vault-light">
+                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-vault-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-6 h-6 text-vault-accent" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4 4h4v16H4V4zm6 0h4v16h-4V4zm6 0h4v16h-4V4z"/>
+                    </svg>
+                    <span class="font-display text-xl tracking-wider">DRAMAVAULT</span>
+                </div>
+                <p class="text-vault-muted text-sm">2024 DramaVault. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================
+        // STORIES DATA (JSON Structure)
+        // ============================================
+        const storiesData = [
+            {
+                id: "love-in-seoul",
+                title: "Love In Seoul",
+                poster: "https://images.unsplash.com/photo-1517685352747-4949a4d29a88?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1517685352747-4949a4d29a88?w=1920&h=1080&fit=crop",
+                description: "A heartwarming tale of two strangers who meet in the bustling streets of Seoul. As they navigate through cultural differences and personal struggles, they discover that love knows no boundaries. Their journey takes them through the vibrant neighborhoods of Hongdae, the serene temples of Bukhansan, and the romantic N Seoul Tower.",
+                genre: ["Romance", "Drama"],
+                year: 2024,
+                rating: "9.2",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "First Meeting", description: "A chance encounter at a coffee shop in Gangnam changes everything.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "45 min" },
+                            { episode: 2, title: "The Connection", description: "They discover they have more in common than they thought.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "42 min" },
+                            { episode: 3, title: "Secrets Revealed", description: "Past secrets threaten to tear them apart.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "48 min" },
+                            { episode: 4, title: "The Choice", description: "A life-changing decision must be made.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "44 min" }
+                        ]
+                    },
+                    {
+                        season: 2,
+                        episodes: [
+                            { episode: 1, title: "New Beginnings", description: "Six months later, their relationship faces new challenges.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "46 min" },
+                            { episode: 2, title: "The Rival", description: "An old flame returns to complicate things.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "43 min" },
+                            { episode: 3, title: "Heartbreak", description: "Trust is broken and hearts are shattered.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "47 min" }
+                        ]
+                    }
+                ],
+                trending: true,
+                latest: true
+            },
+            {
+                id: "midnight-shadows",
+                title: "Midnight Shadows",
+                poster: "https://images.unsplash.com/photo-1509248961725-9d3d9eb7a4c8?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1509248961725-9d3d9eb7a4c8?w=1920&h=1080&fit=crop",
+                description: "A gripping thriller that follows detective Kim Soo-hyun as she hunts down a serial killer who only strikes at midnight. Set against the backdrop of Seoul's neon-lit streets, this dark and intense drama will keep you on the edge of your seat. Every clue leads deeper into a web of corruption and deceit.",
+                genre: ["Thriller", "Mystery"],
+                year: 2024,
+                rating: "8.9",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "The First Midnight", description: "A body is found, and the hunt begins.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "52 min" },
+                            { episode: 2, title: "Hidden Messages", description: "The killer leaves cryptic clues at every crime scene.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "49 min" },
+                            { episode: 3, title: "The Witness", description: "Someone saw something they shouldn't have.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "51 min" },
+                            { episode: 4, title: "Wrong Turn", description: "The investigation takes a dangerous turn.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "48 min" },
+                            { episode: 5, title: "The Trap", description: "Setting a trap for the midnight killer.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "53 min" }
+                        ]
+                    }
+                ],
+                trending: true,
+                latest: false
+            },
+            {
+                id: "corporate-wars",
+                title: "Corporate Wars",
+                poster: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&h=1080&fit=crop",
+                description: "In the cutthroat world of corporate Korea, young executive Park Ji-woo must navigate betrayal, ambition, and forbidden love. When she's tasked with a hostile takeover, she discovers the target company is run by her first love. Business and emotions collide in this intense drama.",
+                genre: ["Drama", "Business"],
+                year: 2023,
+                rating: "8.7",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "The Assignment", description: "Park Ji-woo receives her most challenging mission yet.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "44 min" },
+                            { episode: 2, title: "Old Flames", description: "Discovering the CEO is someone from her past.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "42 min" },
+                            { episode: 3, title: "The Boardroom", description: "The first confrontation in the boardroom.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "45 min" }
+                        ]
+                    },
+                    {
+                        season: 2,
+                        episodes: [
+                            { episode: 1, title: "Power Play", description: "A new player enters the game.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "46 min" },
+                            { episode: 2, title: "The Merger", description: "An unexpected alliance forms.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "44 min" }
+                        ]
+                    }
+                ],
+                trending: false,
+                latest: true
+            },
+            {
+                id: "eternal-promise",
+                title: "Eternal Promise",
+                poster: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1920&h=1080&fit=crop",
+                description: "Two childhood friends made a promise under the cherry blossoms. Twenty years later, fate brings them back together. But can they keep the eternal promise they made all those years ago? A beautiful story of love, loss, and second chances.",
+                genre: ["Romance", "Melodrama"],
+                year: 2024,
+                rating: "9.0",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "Cherry Blossoms", description: "The promise that started everything.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "47 min" },
+                            { episode: 2, title: "Reunion", description: "Two decades later, they meet again.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "45 min" },
+                            { episode: 3, title: "Unspoken Words", description: "Years of silence create awkward tension.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "44 min" },
+                            { episode: 4, title: "The Letter", description: "A forgotten letter resurfaces.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "48 min" }
+                        ]
+                    }
+                ],
+                trending: true,
+                latest: true
+            },
+            {
+                id: "ghost-hospital",
+                title: "Ghost Hospital",
+                poster: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&h=1080&fit=crop",
+                description: "Dr. Lee Min-ji starts her residency at an old hospital with a dark history. Strange occurrences begin to plague the night shift. As she investigates, she uncovers a decades-old mystery that some will kill to keep buried. Every room holds a secret.",
+                genre: ["Horror", "Mystery"],
+                year: 2023,
+                rating: "8.5",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "First Night", description: "The new resident's first shift takes a terrifying turn.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "50 min" },
+                            { episode: 2, title: "Whispers", description: "Strange voices echo through the halls at night.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "48 min" },
+                            { episode: 3, title: "The Locked Wing", description: "What's behind the door that's been sealed for 30 years?", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "52 min" }
+                        ]
+                    }
+                ],
+                trending: false,
+                latest: false
+            },
+            {
+                id: "royal-heirs",
+                title: "Royal Heirs",
+                poster: "https://images.unsplash.com/photo-1564429238718-a2ce73f8c4b5?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1564429238718-a2ce73f8c4b5?w=1920&h=1080&fit=crop",
+                description: "In an alternate modern Korea where the monarchy still exists, Crown Prince Lee Jin-woo must choose between duty and love. When he falls for a commoner, tradition and modernity clash in this lavish historical drama with a contemporary twist.",
+                genre: ["Historical", "Romance"],
+                year: 2024,
+                rating: "9.1",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "The Crown Prince", description: "Introduction to royal life and its burdens.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "55 min" },
+                            { episode: 2, title: "The Commoner", description: "A chance meeting that changes everything.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "52 min" },
+                            { episode: 3, title: "Palace Intrigue", description: "Not everyone wants the prince to be happy.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "54 min" },
+                            { episode: 4, title: "The Scandal", description: "Their secret is discovered.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "51 min" },
+                            { episode: 5, title: "Exile", description: "The price of forbidden love.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "56 min" }
+                        ]
+                    },
+                    {
+                        season: 2,
+                        episodes: [
+                            { episode: 1, title: "Return", description: "The prince returns, but changed.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "58 min" },
+                            { episode: 2, title: "The Queen's Gambit", description: "The Queen Mother makes her move.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "54 min" }
+                        ]
+                    }
+                ],
+                trending: true,
+                latest: false
+            },
+            {
+                id: "chef-dreams",
+                title: "Chef Dreams",
+                poster: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1920&h=1080&fit=crop",
+                description: "Young chef Yoon Ji-hoon dreams of earning three Michelin stars. But his traditional father wants him to take over the family restaurant. Follow his journey through the competitive culinary world of Seoul, where every dish tells a story.",
+                genre: ["Drama", "Food"],
+                year: 2023,
+                rating: "8.6",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "The Dream", description: "Ji-hoon's culinary ambitions clash with family expectations.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "43 min" },
+                            { episode: 2, title: "The Competition", description: "A prestigious cooking competition could change everything.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "45 min" },
+                            { episode: 3, title: "The Mentor", description: "A legendary chef takes Ji-hoon under his wing.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "42 min" }
+                        ]
+                    }
+                ],
+                trending: false,
+                latest: true
+            },
+            {
+                id: "cyber-cops",
+                title: "Cyber Cops",
+                poster: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=600&fit=crop",
+                banner: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&h=1080&fit=crop",
+                description: "In a world where crime has gone digital, an elite team of cyber security experts fights hackers, corporate espionage, and digital terrorism. Led by the brilliant but troubled Kang Min-woo, they navigate the dark web to protect the innocent.",
+                genre: ["Action", "Thriller"],
+                year: 2024,
+                rating: "8.8",
+                seasons: [
+                    {
+                        season: 1,
+                        episodes: [
+                            { episode: 1, title: "The Breach", description: "A massive cyber attack threatens national security.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "48 min" },
+                            { episode: 2, title: "Ghost Protocol", description: "Tracking an invisible enemy through cyberspace.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "46 min" },
+                            { episode: 3, title: "The Mole", description: "There's a traitor within the team.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "49 min" },
+                            { episode: 4, title: "Deep Dive", description: "Going undercover in the dark web.", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "47 min" }
+                        ]
+                    }
+                ],
+                trending: false,
+                latest: false
+            }
+        ];
+
+        // Categories data
+        const categories = [
+            { name: "Romance", icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z", color: "from-pink-600 to-rose-600" },
+            { name: "Drama", icon: "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z", color: "from-purple-600 to-indigo-600" },
+            { name: "Thriller", icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z", color: "from-red-600 to-orange-600" },
+            { name: "Mystery", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z", color: "from-cyan-600 to-teal-600" },
+            { name: "Horror", icon: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", color: "from-gray-700 to-gray-900" },
+            { name: "Historical", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", color: "from-amber-600 to-yellow-600" },
+            { name: "Action", icon: "M13 10V3L4 14h7v7l9-11h-7z", color: "from-blue-600 to-cyan-600" },
+            { name: "Food", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z", color: "from-green-600 to-emerald-600" }
+        ];
+
+        // Support URL (change this to your actual support page)
+        const SUPPORT_URL = "https://example.com/support";
+
+        // State management
+        let currentStory = null;
+        let currentEpisode = null;
+        let currentSeason = 0;
+        let pendingVideoData = null;
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initRouter();
+            initNavbarScroll();
+            renderHomePage();
+        });
+
+        // ============================================
+        // ROUTER
+        // ============================================
+        function initRouter() {
+            window.addEventListener('hashchange', handleRoute);
+            handleRoute();
+        }
+
+        function handleRoute() {
+            const hash = window.location.hash || '#home';
+            const parts = hash.split('/');
+            
+            // Close mobile menu and search
+            document.getElementById('mobileMenu').classList.add('hidden');
+            document.getElementById('searchBar').classList.add('hidden');
+
+            if (hash === '#home' || hash === '') {
+                showPage('homePage');
+                renderHomePage();
+            } else if (parts[1] === 'story' && parts[2]) {
+                showPage('storyPage');
+                renderStoryPage(parts[2]);
+            } else if (parts[1] === 'watch' && parts[2] && parts[3] && parts[4]) {
+                showPage('playerPage');
+                renderPlayerPage(parts[2], parseInt(parts[3]), parseInt(parts[4]));
+            } else {
+                showPage('homePage');
+                renderHomePage();
+            }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // ============================================
+        // NAVBAR
+        // ============================================
+        function initNavbarScroll() {
+            const navbar = document.querySelector('.navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleSearch() {
+            const searchBar = document.getElementById('searchBar');
+            searchBar.classList.toggle('hidden');
+            if (!searchBar.classList.contains('hidden')) {
+                document.getElementById('searchInput').focus();
+            }
+        }
+
+        // ============================================
+        // HOME PAGE
+        // ============================================
+        function renderHomePage() {
+            renderHero();
+            renderLatestStories();
+            renderTrendingStories();
+            renderCategories();
+            renderAllStories();
+            initScrollAnimations();
+        }
+
+        function renderHero() {
+            const heroStory = storiesData.find(s => s.trending) || storiesData[0];
+            const heroBg = document.getElementById('heroBackground');
+            const heroContent = document.getElementById('heroContent');
+
+            heroBg.style.backgroundImage = `url(${heroStory.banner})`;
+
+            heroContent.innerHTML = `
+                <span class="inline-block px-3 py-1 bg-vault-accent text-white text-xs font-semibold rounded mb-4 opacity-0 animate-fadeInUp">
+                    FEATURED
+                </span>
+                <h1 class="font-display text-5xl md:text-7xl lg:text-8xl tracking-wide mb-4 opacity-0 animate-fadeInUp stagger-1">
+                    ${heroStory.title.toUpperCase()}
+                </h1>
+                <div class="flex items-center gap-4 mb-4 opacity-0 animate-fadeInUp stagger-2">
+                    <span class="text-vault-gold font-semibold">${heroStory.rating}</span>
+                    <span class="text-vault-muted">${heroStory.year}</span>
+                    <span class="text-vault-muted">${heroStory.seasons.reduce((acc, s) => acc + s.episodes.length, 0)} Episodes</span>
+                </div>
+                <p class="text-vault-light text-lg mb-6 line-clamp-3 opacity-0 animate-fadeInUp stagger-3">
+                    ${heroStory.description}
+                </p>
+                <div class="flex flex-wrap gap-2 mb-8 opacity-0 animate-fadeInUp stagger-4">
+                    ${heroStory.genre.map(g => `<span class="genre-tag px-3 py-1 rounded-full text-sm">${g}</span>`).join('')}
+                </div>
+                <div class="flex gap-4 opacity-0 animate-fadeInUp stagger-5">
+                    <a href="#story/${heroStory.id}" class="btn-primary px-8 py-3 rounded-lg font-semibold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Watch Now
+                    </a>
+                    <a href="#story/${heroStory.id}" class="btn-secondary px-6 py-3 rounded-lg font-semibold text-white">
+                        More Info
+                    </a>
+                </div>
+            `;
+        }
+
+        function renderLatestStories() {
+            const container = document.getElementById('latestStories');
+            const latest = storiesData.filter(s => s.latest);
+
+            container.innerHTML = latest.map((story, index) => createStoryCard(story, index)).join('');
+        }
+
+        function renderTrendingStories() {
+            const container = document.getElementById('trendingStories');
+            const trending = storiesData.filter(s => s.trending);
+
+            container.innerHTML = trending.map((story, index) => createStoryCard(story, index)).join('');
+        }
+
+        function renderAllStories() {
+            const container = document.getElementById('allStories');
+            container.innerHTML = storiesData.map((story, index) => createStoryCard(story, index)).join('');
+        }
+
+        function createStoryCard(story, index) {
+            return `
+                <a href="#story/${story.id}" class="story-card flex-shrink-0 block rounded-lg overflow-hidden bg-vault-card group">
+                    <div class="relative aspect-[2/3] overflow-hidden">
+                        <img 
+                            src="${story.poster}" 
+                            alt="${story.title}"
+                            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            loading="lazy"
+                        >
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-full bg-vault-accent flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </span>
+                                <span class="text-sm font-medium">Play</span>
+                            </div>
+                        </div>
+                        ${story.trending ? `
+                            <div class="absolute top-2 right-2 bg-vault-accent px-2 py-1 rounded text-xs font-semibold">
+                                TRENDING
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold truncate">${story.title}</h3>
+                        <div class="flex items-center gap-2 text-sm text-vault-muted mt-1">
+                            <span class="text-vault-gold">${story.rating}</span>
+                            <span>${story.year}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoriesGrid');
+            container.innerHTML = categories.map((cat, index) => `
+                <button 
+                    onclick="filterByCategory('${cat.name}')"
+                    class="relative overflow-hidden rounded-xl aspect-video group opacity-0 animate-fadeInUp"
+                    style="animation-delay: ${index * 0.1}s"
+                >
+                    <div class="absolute inset-0 bg-gradient-to-br ${cat.color}"></div>
+                    <div class="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors"></div>
+                    <div class="relative h-full flex flex-col items-center justify-center p-4">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${cat.icon}"/>
+                        </svg>
+                        <span class="font-semibold">${cat.name}</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function filterByCategory(category) {
+            const filtered = storiesData.filter(s => s.genre.includes(category));
+            const container = document.getElementById('allStories');
+            container.innerHTML = filtered.map((story, index) => createStoryCard(story, index)).join('');
+            
+            // Scroll to all stories section
+            document.getElementById('allStories').scrollIntoView({ behavior: 'smooth' });
+            
+            // Update section title
+            const sectionTitle = document.querySelector('#allStories').previousElementSibling;
+            if (sectionTitle) {
+                sectionTitle.textContent = `${category.toUpperCase()} STORIES`;
+            }
+        }
+
+        // ============================================
+        // STORY PAGE
+        // ============================================
+        function renderStoryPage(storyId) {
+            const story = storiesData.find(s => s.id === storyId);
+            if (!story) {
+                window.location.hash = '#home';
+                return;
+            }
+
+            currentStory = story;
+            currentSeason = 0;
+
+            const container = document.getElementById('storyContent');
+            container.innerHTML = `
+                <!-- Banner -->
+                <div class="relative h-[50vh] md:h-[60vh]">
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url(${story.banner})"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-vault-black via-vault-black/70 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-vault-black via-vault-black/50 to-transparent"></div>
+                </div>
+
+                <!-- Content -->
+                <div class="relative -mt-32 px-4 md:px-8 pb-12">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="flex flex-col md:flex-row gap-8">
+                            <!-- Poster -->
+                            <div class="flex-shrink-0 w-48 md:w-64 mx-auto md:mx-0">
+                                <img src="${story.poster}" alt="${story.title}" class="w-full rounded-xl shadow-2xl">
+                            </div>
+
+                            <!-- Info -->
+                            <div class="flex-1">
+                                <h1 class="font-display text-4xl md:text-5xl lg:text-6xl tracking-wide mb-4">${story.title.toUpperCase()}</h1>
+                                <div class="flex flex-wrap items-center gap-4 mb-4">
+                                    <span class="text-vault-gold font-semibold text-lg">${story.rating}</span>
+                                    <span class="text-vault-muted">${story.year}</span>
+                                    <span class="text-vault-muted">${story.seasons.length} Season${story.seasons.length > 1 ? 's' : ''}</span>
+                                    <span class="text-vault-muted">${story.seasons.reduce((acc, s) => acc + s.episodes.length, 0)} Episodes</span>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mb-6">
+                                    ${story.genre.map(g => `<span class="genre-tag px-4 py-1 rounded-full text-sm">${g}</span>`).join('')}
+                                </div>
+                                <p class="text-vault-light text-lg leading-relaxed mb-8 max-w-3xl">${story.description}</p>
+                                
+                                <a href="#watch/${story.id}/1/1" class="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-lg font-semibold text-white">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    Play Episode 1
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Ad Space -->
+                        <div class="ad-placeholder h-20 md:h-24 rounded-lg mt-8 flex items-center justify-center text-vault-muted text-sm">
+                            Advertisement Space
+                        </div>
+
+                        <!-- Seasons -->
+                        <div class="mt-12">
+                            <h2 class="font-display text-2xl md:text-3xl tracking-wide mb-6">EPISODES</h2>
+                            
+                            <!-- Season Tabs -->
+                            <div class="flex gap-2 mb-6 overflow-x-auto scroll-container pb-2">
+                                ${story.seasons.map((s, i) => `
+                                    <button 
+                                        onclick="selectSeason(${i})"
+                                        class="season-tab px-6 py-2 rounded-full font-medium whitespace-nowrap ${i === 0 ? 'active' : 'bg-vault-card'}"
+                                        data-season="${i}"
+                                    >
+                                        Season ${s.season}
+                                    </button>
+                                `).join('')}
+                            </div>
+
+                            <!-- Episodes List -->
+                            <div id="episodesList" class="space-y-3">
+                                ${renderEpisodes(story.seasons[0].episodes, story.id, 1)}
+                            </div>
+                        </div>
+
+                        <!-- Related Stories -->
+                        <div class="mt-12">
+                            <h2 class="font-display text-2xl md:text-3xl tracking-wide mb-6">YOU MIGHT ALSO LIKE</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                ${getRelatedStories(story).map(s => createStoryCard(s, 0)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEpisodes(episodes, storyId, seasonNum) {
+            return episodes.map(ep => `
+                <a href="#watch/${storyId}/${seasonNum}/${ep.episode}" class="episode-card flex gap-4 p-4 rounded-xl bg-vault-card border border-vault-border group">
+                    <div class="flex-shrink-0 w-32 md:w-48 aspect-video bg-vault-elevated rounded-lg overflow-hidden relative">
+                        <img src="${currentStory.banner}" alt="" class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full bg-vault-accent/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <span class="absolute bottom-2 right-2 text-xs bg-black/70 px-2 py-1 rounded">${ep.duration}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-vault-muted text-sm">${ep.episode}.</span>
+                            <h3 class="font-semibold truncate">${ep.title}</h3>
+                        </div>
+                        <p class="text-vault-light text-sm line-clamp-2">${ep.description}</p>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function selectSeason(seasonIndex) {
+            currentSeason = seasonIndex;
+            
+            // Update tab styles
+            document.querySelectorAll('.season-tab').forEach((tab, i) => {
+                if (i === seasonIndex) {
+                    tab.classList.add('active');
+                    tab.classList.remove('bg-vault-card');
+                } else {
+                    tab.classList.remove('active');
+                    tab.classList.add('bg-vault-card');
+                }
+            });
+
+            // Update episodes list
+            const episodesList = document.getElementById('episodesList');
+            episodesList.innerHTML = renderEpisodes(
+                currentStory.seasons[seasonIndex].episodes,
+                currentStory.id,
+                currentStory.seasons[seasonIndex].season
+            );
+        }
+
+        function getRelatedStories(story) {
+            return storiesData
+                .filter(s => s.id !== story.id && s.genre.some(g => story.genre.includes(g)))
+                .slice(0, 5);
+        }
+
+        // ============================================
+        // PLAYER PAGE
+        // ============================================
+        function renderPlayerPage(storyId, seasonNum, episodeNum) {
+            const story = storiesData.find(s => s.id === storyId);
+            if (!story) {
+                window.location.hash = '#home';
+                return;
+            }
+
+            const season = story.seasons.find(s => s.season === seasonNum);
+            if (!season) {
+                window.location.hash = `#story/${storyId}`;
+                return;
+            }
+
+            const episode = season.episodes.find(e => e.episode === episodeNum);
+            if (!episode) {
+                window.location.hash = `#story/${storyId}`;
+                return;
+            }
+
+            currentStory = story;
+            currentSeason = seasonNum;
+            currentEpisode = episodeNum;
+
+            const container = document.getElementById('playerContent');
+            const hasNextEpisode = episodeNum < season.episodes.length;
+            const hasPrevEpisode = episodeNum > 1;
+
+            container.innerHTML = `
+                <div class="min-h-screen flex flex-col">
+                    <!-- Video Player -->
+                    <div class="video-container relative w-full aspect-video bg-black">
+                        <div id="videoFrame" class="w-full h-full flex items-center justify-center">
+                            <div class="text-center p-8">
+                                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-vault-accent/20 flex items-center justify-center">
+                                    <svg class="w-10 h-10 text-vault-accent" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="font-display text-3xl tracking-wide mb-2">${story.title.toUpperCase()}</h2>
+                                <p class="text-vault-light mb-6">Season ${seasonNum} - Episode ${episodeNum}: ${episode.title}</p>
+                                <button 
+                                    id="playButton"
+                                    onclick="handlePlayClick('${storyId}', ${seasonNum}, ${episodeNum})"
+                                    class="btn-primary px-8 py-3 rounded-lg font-semibold text-white inline-flex items-center gap-2"
+                                >
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    <span id="playButtonText">Play Episode</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="bg-vault-darker border-t border-vault-border p-4">
+                        <div class="max-w-7xl mx-auto">
+                            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div>
+                                    <h1 class="font-semibold text-xl">${episode.title}</h1>
+                                    <p class="text-vault-muted">${story.title} - Season ${seasonNum} Episode ${episodeNum}</p>
+                                </div>
+                                <div class="flex gap-3">
+                                    ${hasPrevEpisode ? `
+                                        <a href="#watch/${storyId}/${seasonNum}/${episodeNum - 1}" class="btn-secondary px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                            </svg>
+                                            Previous
+                                        </a>
+                                    ` : ''}
+                                    ${hasNextEpisode ? `
+                                        <a href="#watch/${storyId}/${seasonNum}/${episodeNum + 1}" class="btn-primary px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                                            Next
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </a>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <p class="text-vault-light mt-4">${episode.description}</p>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex-1 px-4 md:px-8 py-8">
+                        <div class="max-w-7xl mx-auto">
+                            <!-- Ad Space -->
+                            <div class="ad-placeholder h-20 md:h-24 rounded-lg mb-8 flex items-center justify-center text-vault-muted text-sm">
+                                Advertisement Space
+                            </div>
+
+                            <!-- Episode List -->
+                            <h2 class="font-display text-2xl tracking-wide mb-4">ALL EPISODES</h2>
+                            <div class="grid gap-3">
+                                ${season.episodes.map(ep => `
+                                    <a href="#watch/${storyId}/${seasonNum}/${ep.episode}" class="episode-card flex gap-4 p-4 rounded-xl bg-vault-card border border-vault-border group ${ep.episode === episodeNum ? 'ring-2 ring-vault-accent' : ''}">
+                                        <div class="flex-shrink-0 w-24 md:w-32 aspect-video bg-vault-elevated rounded-lg overflow-hidden relative">
+                                            <img src="${story.banner}" alt="" class="w-full h-full object-cover opacity-60">
+                                            ${ep.episode === episodeNum ? `
+                                                <div class="absolute inset-0 flex items-center justify-center bg-vault-accent/30">
+                                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z"/>
+                                                    </svg>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-vault-muted text-sm">${ep.episode}.</span>
+                                                <h3 class="font-semibold truncate">${ep.title}</h3>
+                                                ${ep.episode === episodeNum ? '<span class="text-vault-accent text-xs">NOW PLAYING</span>' : ''}
+                                            </div>
+                                            <p class="text-vault-muted text-sm hidden md:block">${ep.duration}</p>
+                                        </div>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Check if support was visited
+            updatePlayButton();
+        }
+
+        function handlePlayClick(storyId, seasonNum, episodeNum) {
+            const supportVisited = localStorage.getItem('supportVisited');
+            
+            if (supportVisited === 'true') {
+                // Play the video
+                playVideo(storyId, seasonNum, episodeNum);
+            } else {
+                // Show support modal
+                pendingVideoData = { storyId, seasonNum, episodeNum };
+                showSupportModal();
+            }
+        }
+
+        function showSupportModal() {
+            document.getElementById('supportModal').classList.remove('hidden');
+            updateSupportButton();
+        }
+
+        function closeSupportModal() {
+            document.getElementById('supportModal').classList.add('hidden');
+        }
+
+        function handleSupportAction() {
+            const supportVisited = localStorage.getItem('supportVisited');
+            
+            if (supportVisited === 'true') {
+                // Play video
+                if (pendingVideoData) {
+                    playVideo(pendingVideoData.storyId, pendingVideoData.seasonNum, pendingVideoData.episodeNum);
+                    closeSupportModal();
+                }
+            } else {
+                // Open support page
+                window.open(SUPPORT_URL, '_blank');
+                localStorage.setItem('supportVisited', 'true');
+                updateSupportButton();
+                updatePlayButton();
+            }
+        }
+
+        function updateSupportButton() {
+            const btn = document.getElementById('supportActionButton');
+            const supportVisited = localStorage.getItem('supportVisited');
+            
+            if (btn) {
+                if (supportVisited === 'true') {
+                    btn.textContent = 'Play Episode';
+                } else {
+                    btn.textContent = 'Visit Support Page';
+                }
+            }
+        }
+
+        function updatePlayButton() {
+            const btn = document.getElementById('playButtonText');
+            const supportVisited = localStorage.getItem('supportVisited');
+            
+            if (btn) {
+                if (supportVisited === 'true') {
+                    btn.textContent = 'Play Episode';
+                } else {
+                    btn.textContent = 'Visit Support to Play';
+                }
+            }
+        }
+
+        function playVideo(storyId, seasonNum, episodeNum) {
+            const story = storiesData.find(s => s.id === storyId);
+            const season = story.seasons.find(s => s.season === seasonNum);
+            const episode = season.episodes.find(e => e.episode === episodeNum);
+
+            const videoFrame = document.getElementById('videoFrame');
+            videoFrame.innerHTML = `
+                <iframe 
+                    src="${episode.video}?autoplay=1" 
+                    class="w-full h-full"
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen
+                ></iframe>
+            `;
+        }
+
+        // ============================================
+        // SEARCH
+        // ============================================
+        function handleSearch(query) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!query.trim()) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            const results = storiesData.filter(story => 
+                story.title.toLowerCase().includes(query.toLowerCase()) ||
+                story.genre.some(g => g.toLowerCase().includes(query.toLowerCase()))
+            );
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center text-vault-muted py-8">
+                        No results found for "${query}"
+                    </div>
+                `;
+                return;
+            }
+
+            resultsContainer.innerHTML = results.map(story => `
+                <a href="#story/${story.id}" onclick="toggleSearch()" class="flex gap-4 p-3 rounded-lg hover:bg-vault-elevated transition-colors">
+                    <img src="${story.poster}" alt="${story.title}" class="w-16 h-24 object-cover rounded">
+                    <div>
+                        <h3 class="font-semibold">${story.title}</h3>
+                        <p class="text-sm text-vault-muted">${story.year} - ${story.genre.join(', ')}</p>
+                        <span class="text-vault-gold text-sm">${story.rating}</span>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        // ============================================
+        // SCROLL ANIMATIONS
+        // ============================================
+        function initScrollAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.opacity-0').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // ============================================
+        // KEYBOARD NAVIGATION
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSupportModal();
+                document.getElementById('searchBar').classList.add('hidden');
+                document.getElementById('mobileMenu').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
