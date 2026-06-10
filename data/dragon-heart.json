@@ -1,0 +1,26 @@
+{
+  "id": "dragon-heart",
+  "title": "Dragon Heart",
+  "poster": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop",
+  "banner": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&h=600&fit=crop",
+  "description": "An epic fantasy adventure where a warrior must save the kingdom from an ancient dragon.",
+  "genres": ["Action", "Fantasy"],
+  "status": "Completed",
+  "year": "2023",
+  "rating": "9.5",
+  "views": 340000,
+  "seasons": [
+    {
+      "season": 1,
+      "episodes": [
+        {
+          "episode": 1,
+          "title": "The Prophecy",
+          "thumbnail": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=225&fit=crop",
+          "ad_url": "https://bing.com",
+          "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+        }
+      ]
+    }
+  ]
+}
