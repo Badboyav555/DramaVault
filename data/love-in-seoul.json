@@ -1,0 +1,33 @@
+{
+  "id": "love-in-seoul",
+  "title": "Love In Seoul",
+  "poster": "https://images.unsplash.com/photo-1529686342540-1b43aec0df75?w=400&h=600&fit=crop",
+  "banner": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=600&fit=crop",
+  "description": "A romantic story set in the beautiful streets of Seoul, where two strangers meet by destiny and fall in love amidst the cherry blossoms.",
+  "genres": ["Romance", "Drama"],
+  "status": "Ongoing",
+  "year": "2024",
+  "rating": "9.2",
+  "views": 125000,
+  "seasons": [
+    {
+      "season": 1,
+      "episodes": [
+        {
+          "episode": 1,
+          "title": "Destined Meeting",
+          "thumbnail": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=225&fit=crop",
+          "ad_url": "https://google.com",
+          "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        },
+        {
+          "episode": 2,
+          "title": "Coffee Shop Confession",
+          "thumbnail": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=225&fit=crop",
+          "ad_url": "https://google.com",
+          "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        }
+      ]
+    }
+  ]
+}
